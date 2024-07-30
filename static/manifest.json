@@ -2,6 +2,5 @@
   "short_name": "Bowery",
   "name": "Bowery",
   "start_url": "/",
-  "theme_color": "#FEF7FF",
   "display": "standalone"
 }

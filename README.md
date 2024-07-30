@@ -2,6 +2,10 @@
 
 Bowery is an assistant based on the Gemini API and designed with Material You.
 
+## Screenshot
+
+![screenshot](screenshot.JPG)
+
 ## How to use?
 
 1. Clone the repo
