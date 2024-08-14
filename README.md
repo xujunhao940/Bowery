@@ -2,6 +2,8 @@
 
 Bowery is an assistant based on the Gemini API and designed with Material You.
 
+Supports searching on Wikipedia.
+
 ## Screenshot
 
 ![screenshot](screenshot.JPG)

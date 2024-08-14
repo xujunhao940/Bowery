@@ -63,9 +63,7 @@
 
                 .dialog {
                     height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 8px;
+                    overflow-y: scroll;
                 }
             }
 
@@ -97,10 +95,14 @@
         .dialog {
             scroll-snap-align: center;
             margin: 8px 0 8px 0;
+            scroll-snap-type: y mandatory;
+            border-radius: var(--mdui-shape-corner-medium);
 
             .img-card {
                 height: 100%;
                 display: flex;
+                scroll-snap-align: center;
+                z-index: -1;
 
                 .img {
                     width: 100%;
@@ -114,7 +116,7 @@
                     bottom: 6px;
                     right: 6px;
                     max-width: 50%;
-                    max-height: 44px;
+                    max-height: 50%;
                     backdrop-filter: blur(10px);
                     -webkit-backdrop-filter: blur(10px);
                     color: rgb(var(--mdui-color-on-background));
@@ -122,9 +124,43 @@
             }
 
             .answer-card {
+                max-height: 100%;
+                height: 0;
                 display: flex;
-                align-items: center;
-                max-height: 30%;
+                flex-direction: column;
+                scroll-snap-align: center;
+                gap: 8px;
+                z-index: 0;
+
+                div {
+                    display: flex;
+                    align-items: start;
+
+                    &.search {
+                        display: none;
+                    }
+
+                    span {
+                        height: auto;
+                        max-height: 100%;
+                    }
+                }
+
+                .answer {
+                    max-height: 50%;
+                    overflow-y: scroll;
+                }
+
+                .search {
+                    height: 100%;
+                    overflow-y: scroll;
+                    gap: 4px;
+                    flex-direction: column;
+
+                    .summary-button {
+                        width: 100%;
+                    }
+                }
             }
         }
 
@@ -132,7 +168,7 @@
             padding: 0;
             transition: var(--mdui-motion-duration-medium2);
 
-            span {
+            & span {
                 height: 100%;
                 overflow-y: scroll;
                 text-shadow: 0 0 10px rgb(var(--mdui-color-background));
@@ -143,18 +179,49 @@
         }
 
         .finish {
+            .answer-card {
+                height: 100%;
+                margin-top: 8px;
+            }
+
             .text-card, .answer-card {
                 padding: 12px;
             }
+        }
 
-            .speak-now {
-                max-height: 40px !important;
-                opacity: 1 !important;
+        .search-card, .search-answer-card {
+            width: 100%;
+            padding: 16px;
+            background: rgba(var(--mdui-color-secondary-container), .5);
+
+            &.search-card {
+                display: flex;
+                height: 100%;
+
+                div {
+                    height: 100%;
+                    flex-direction: column;
+                }
+            }
+
+            &.search-answer-card {
+                height: max-content;
+                max-height: 40%;
+                overflow-y: scroll;
+            }
+
+            .search-title, .search-content {
+                margin: 0;
+
+                &.search-content {
+                    height: 100%;
+                    overflow-y: scroll;
+                }
             }
         }
     </style>
 </head>
-<body style="position: fixed;top: 0;left: 0;bottom: 0;right: 0">
+<body style="position: fixed;top: 0;left: 0;bottom: 0;right: 0;margin: 0;padding: 8px;">
 <div id="app">
     <div id="chat" style="overflow-y: scroll;scroll-snap-type: y mandatory">
         <div class="dialog pending">
@@ -162,10 +229,23 @@
                 <video class="img" id="video_preview" muted playsinline></video>
                 <mdui-card class="text-card"><span></span></mdui-card>
             </mdui-card>
-            <mdui-card class="answer-card"><span></span>
-                <mdui-button-icon icon="volume_up" class="speak-now"
-                                  style="max-height:0;opacity: 0;transition: var(--mdui-motion-duration-medium2)"
-                                  onclick="tts($(this).prev().text())"></mdui-button-icon>
+            <mdui-card class="answer-card">
+                <div class="answer">
+                    <span></span>
+                    <mdui-button-icon icon="volume_up" class="speak-now" variant="tonal"
+                                      style="max-height:0;opacity: 0;transition: var(--mdui-motion-duration-medium2)"
+                                      onclick="tts($(this).prev().text())"></mdui-button-icon>
+                </div>
+                <div class="search">
+                    <mdui-card class="search-card" variant="filled" target="_blank">
+                        <div>
+                            <h2 class="search-title"></h2>
+                            <p class="search-content"></p>
+                        </div>
+                    </mdui-card>
+                    <mdui-button variant="filled" class="summary-button">Continue answering questions</mdui-button>
+                    <mdui-card class="search-answer-card" variant="filled"></mdui-card>
+                </div>
             </mdui-card>
         </div>
     </div>
@@ -208,6 +288,36 @@
         $(".dialog:last-child .img-card").append(`<img class="img" src="${photo}" />`)
     }
 
+    function send(message, photo = "") {
+        $("#listening-button").html(`<span class="material-symbols-outlined">mic</span>`)
+        $("#listening-button").attr("variant", "filled")
+        $("#listening-button").attr("disabled", "true")
+
+        fetch("/chat", {
+            method: "POST",
+            body: JSON.stringify({
+                message: message,
+                photo: photo
+            })
+        }).then(response => {
+            const reader = response.body.getReader();
+            return reader.read().then(function process({done, value}) {
+                if (done) {
+                    writeAnswer('{"type":"answer","text":"[DONE]"}')
+                    return;
+                }
+                var data = new TextDecoder().decode(value)
+                data.split("-|BOWERY SPLIT|-").forEach((content) => {
+                    var cont = content.trim()
+                    if (cont.startsWith("{")) {
+                        writeAnswer(cont)
+                    }
+                })
+                return reader.read().then(process);
+            });
+        })
+    }
+
     function startRecognize() {
         recognition = new webkitSpeechRecognition() || new SpeechRecognition();
         recognition.interimResults = true
@@ -223,28 +333,7 @@
 
         recognition.onresult = (e) => {
             if (e.results[0][0].transcript === pastSentence) {
-                $("#listening-button").html(`<span class="material-symbols-outlined">mic</span>`)
-                $("#listening-button").attr("variant", "filled")
-                $("#listening-button").attr("disabled", "true")
-
-                fetch("/chat", {
-                    method: "POST",
-                    body: JSON.stringify({
-                        message: e.results[0][0].transcript,
-                        photo: photo
-                    })
-                }).then(response => {
-                    const reader = response.body.getReader();
-                    return reader.read().then(function process({done, value}) {
-                        if (done) {
-                            writeAnswer("[DONE]")
-                            return;
-                        }
-                        var data = new TextDecoder().decode(value)
-                        writeAnswer(data)
-                        return reader.read().then(process);
-                    });
-                })
+                send(e.results[0][0].transcript, photo)
             }
             writeText(e.results[0][0].transcript)
             pastSentence = e.results[0][0].transcript
@@ -294,32 +383,117 @@
         $(".dialog:last-child .text-card span").text(content)
     }
 
-    function writeAnswer(content) {
-        if (content === "[DONE]") {
-            $("#listening-button").removeAttr("disabled")
-            $(".dialog:last-child").addClass("finish")
-            $("#chat").append(`<div class="dialog pending">
+    function writeAnswer(data) {
+        var contents = JSON.parse(data)
+        var type = contents.type
+        var content = contents.text
+        if (type === "answer") {
+            if (content === "[DONE]") {
+                $("#listening-button").removeAttr("disabled")
+                $(".dialog:last-child").addClass("finish")
+                $("#chat").append(`<div class="dialog pending">
             <mdui-card class="img-card">
                 <video class="img" id="video_preview" muted playsinline></video>
                 <mdui-card class="text-card"><span></span></mdui-card>
             </mdui-card>
-            <mdui-card class="answer-card"><span></span><mdui-button-icon icon="volume_up" class="speak-now"
-                                  style="max-height:0;opacity: 0;transition: var(--mdui-motion-duration-medium2)"
-                                  onclick="tts($(this).prev().text())"></mdui-button-icon>
+            <mdui-card class="answer-card">
+                <div class="answer">
+                        <span></span>
+                        <mdui-button-icon icon="volume_up" class="speak-now" variant="tonal"
+                                          style="max-height:0;opacity: 0;transition: var(--mdui-motion-duration-medium2)"
+                                          onclick="tts($(this).prev().text())"></mdui-button-icon>
+
+                </div>
+                <div class="search">
+                    <mdui-card class="search-card" variant="filled" target="_blank">
+                        <div>
+                            <h2 class="search-title"></h2>
+                            <p class="search-content"></p>
+                        </div>
+                    </mdui-card>
+                    <mdui-button variant="filled" class="summary-button">Continue answering questions</mdui-button>
+                    <mdui-card class="search-answer-card" variant="filled"></mdui-card>
+                </div>
             </mdui-card>
         </div>`)
-            setCam()
-            return
+                setCam()
+                return
+            }
         }
+
+        console.log(contents)
 
         if ($(".dialog:last-child").hasClass("pending")) {
-            $(".dialog:last-child .answer-card").css("padding", "12px")
-            $(".dialog:last-child .answer-card span").text(content)
+            var answer_card = $(".dialog:last-child .answer-card")
+            var dialog = $(".dialog:last-child")[0]
+            answer_card.css("padding", "12px")
+            answer_card.css("height", "100%")
+            answer_card.css("margin-top", "8px")
+            dialog.scrollTo({top: dialog.scrollHeight, behavior: 'smooth'})
             $(".dialog:last-child").removeClass("pending")
+            if (type === "answer") {
+                $(".dialog:last-child .answer-card .answer span").text(content)
+                return
+            }
         } else {
-            $(".dialog:last-child .answer-card span").text($(".dialog:last-child .answer-card span").text() + content)
+            if (type === "answer") {
+                $(".dialog:last-child .search span").css("padding", "12px")
+                $(".dialog:last-child .speak-now").css("max-height", "40px")
+                $(".dialog:last-child .speak-now").css("opacity", "1")
+                $(".dialog:last-child .answer-card .answer span").text($(".dialog:last-child .answer-card .answer span").text() + content)
+                return
+            }
         }
 
+        $(".dialog:last-child .search-title").text(contents.website)
+        $(".dialog:last-child .search-content").text(contents.summary)
+
+        $(".dialog:last-child .search").css("display", "flex")
+
+        $(".dialog:last-child .search-card").attr("href", contents.url)
+
+        if (contents.mode === "summary") {
+            $(".dialog:last-child .summary-button").css("display", "none")
+            $(".dialog:last-child .search-answer-card").css("display", "none")
+        } else {
+            $(".dialog:last-child .search-answer-card").css("display", "none")
+            $(".dialog:last-child .summary-button")[0].onclick = (event) => {
+                $(event.target).css("display", "none")
+                searchAnswer(contents, $(event.target).next(".search-answer-card"))
+            }
+        }
+    }
+
+    function searchAnswer(data, searchAnswerCard) {
+        console.log(searchAnswerCard)
+        searchAnswerCard.css("display", "flex")
+        fetch("/answer", {
+            method: "POST",
+            body: JSON.stringify({
+                pageid: data.pageid,
+                lang: data.lang,
+                then: data.then
+            })
+        }).then(response => {
+            const reader = response.body.getReader();
+            return reader.read().then(function process({done, value}) {
+                if (done) {
+                    writeSearchAnswer("[DONE]", searchAnswerCard)
+                    return;
+                }
+                var data = new TextDecoder().decode(value)
+                console.log(data)
+                writeSearchAnswer(data, searchAnswerCard)
+                return reader.read().then(process);
+            });
+        })
+    }
+
+    function writeSearchAnswer(data, searchAnswerCard) {
+        if (data === "[DONE]") {
+            return
+        }
+        searchAnswerCard.text(searchAnswerCard.text() + data)
     }
 
     function tts(content) {
