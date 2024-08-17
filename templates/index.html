@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no"/>
+    <meta name="renderer" content="webkit"/>
+    <link rel="stylesheet" href="https://unpkg.com/mdui@2/mdui.css">
+    <script src="https://unpkg.com/mdui@2/mdui.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/static/component.js" type="module"></script>
+    <link rel="stylesheet" href="/static/index.css">
+    <title>Bowery</title>
+</head>
+<body>
+<div id="app">
+    <div id="chat">
+    </div>
+    <div id="panel">
+        <div id="logo">
+            <span>Bowery</span>
+        </div>
+        <b64-image id="image-field"
+                   base64="Undefined"
+                   style="width: 100%;">
+            <mdui-button-icon slot="button" variant="tonal"><span class="material-symbols-outlined"
+                                                                  onclick="document.getElementById('image-field').setAttribute('base64','Undefined')">delete</span>
+            </mdui-button-icon>
+        </b64-image>
+        <input id="prompt-field" placeholder="Enter a prompt here"
+               oninput="if(event.target.value){document.querySelector('#send-button').removeAttribute('disabled')}else{document.querySelector('#send-button').setAttribute('disabled','disabled')}"/>
+        <div id="controls">
+            <mdui-button-icon onclick="showCamera()"><span class="material-symbols-outlined">photo_camera</span>
+            </mdui-button-icon>
+            <mdui-button-icon onclick="startRecognize()" id="recognize-button" class="huge-button"><span
+                    class="material-symbols-outlined">mic</span></mdui-button-icon>
+            <mdui-button-icon onclick="send()" id="send-button" disabled><span
+                    class="material-symbols-outlined">send</span></mdui-button-icon>
+        </div>
+    </div>
+    <div id="camera">
+        <video autoplay playsinline muted id="video-preview"></video>
+        <mdui-button-icon style="width: 60px;height: 60px" icon="photo_camera" onclick="takePhoto()"></mdui-button-icon>
+        <canvas id="canvas" style="display: none"></canvas>
+    </div>
+</div>
+<script src="/static/index.js"></script>
+</body>
+</html>
