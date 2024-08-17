@@ -1,4 +1,5 @@
-import {LitElement, html, css, unsafeCSS} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import {LitElement, html, css, unsafeHTML} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/all/lit-all.min.js';
+import {marked} from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
 
 function gid() {
     function S4() {
@@ -107,8 +108,8 @@ class AnswerMessage extends LitElement {
         }
         return html`
             <div>
-                <mdui-button-icon icon="volume_up" onclick="speakNow('${this.text}')"></mdui-button-icon>
-                <p>${this.text}</p>
+                <mdui-button-icon icon="volume_up" onclick="speakNow(this.renderRoot.querySelector('p').innerText)"></mdui-button-icon>
+                <p>${unsafeHTML(marked.parse(this.text))}</p>
                 ${imageTem}
             </div>`
     }
