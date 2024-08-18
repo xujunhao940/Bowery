@@ -159,6 +159,7 @@ class Image extends LitElement {
             background: rgba(var(--mdui-color-primary-container), .5);
             z-index: 1;
             border-radius: 0;
+            box-sizing: border-box;
         }
 
         .image-container.expanded img {
