@@ -108,7 +108,7 @@ class AnswerMessage extends LitElement {
         }
         return html`
             <div>
-                <mdui-button-icon icon="volume_up" onclick="speakNow(this.renderRoot.querySelector('p').innerText)"></mdui-button-icon>
+                <mdui-button-icon icon="volume_up" onclick="speakNow(event.target.parentNode.parentNode.querySelector('p').innerText)"></mdui-button-icon>
                 <p>${unsafeHTML(marked.parse(this.text))}</p>
                 ${imageTem}
             </div>`
