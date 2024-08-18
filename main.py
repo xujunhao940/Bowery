@@ -4,14 +4,21 @@ from PIL import Image
 import base64
 import io
 import google.generativeai as genai
-from config import *
-from search import searchSchema, search
+from config import gemini_api_token, tools_config
+from search import search, searchSchema
+from paint import paint, paintSchema
 
-if api_token == "YOUR_API_TOKEN":
+if gemini_api_token == "YOUR_API_TOKEN":
     raise Exception("Replace `YOUR_API_TOKEN` with your Gemini API token in `config.py`")
 
+tools = []
+if tools_config["search"]:
+    tools.append(searchSchema)
+if tools_config["paint"]:
+    tools.append(paintSchema)
+
 app = Flask(__name__)
-genai.configure(api_key=api_token)
+genai.configure(api_key=gemini_api_token)
 
 generation_config = genai.GenerationConfig(
     temperature=0.2
@@ -20,8 +27,11 @@ generation_config = genai.GenerationConfig(
 model = genai.GenerativeModel(
     model_name="gemini-1.5-flash-latest",
     generation_config=generation_config,
-    system_instruction="You are an assistant called Bowery. You don’t have to ask when the user doesn’t ask to search. Search only when the user explicitly states that they want to search. Answer in the language the user speaks.",
-    tools=[searchSchema]
+    system_instruction="You are an assistant called Bowery. "
+                       "You don’t have to ask when the user doesn’t ask to call the function."
+                       "Call the function only when the user explicitly states that they want to call the function."
+                       "Answer in the language the user speaks.",
+    tools=tools
 )
 
 chat_session = model.start_chat()
@@ -60,6 +70,11 @@ def chat():
                     for chunk in response:
                         yield json.dumps({"type": "text", "message": chunk.text})
                         yield "-|BOWERY SPLIT|-"
+                if part.function_call.name == "paint":
+                    print("paint")
+                    response = paint(part.function_call.args["keywords"])
+                    yield json.dumps({"type": "image", "message": response.decode()})
+                    yield "-|BOWERY SPLIT|-"
 
     return stream_with_context(stream())
 

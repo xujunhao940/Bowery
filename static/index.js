@@ -88,12 +88,23 @@ function send() {
                 var cont = content.trim()
                 if (cont.startsWith("{")) {
                     data = JSON.parse(cont)
-                    if (step === 0) {
-                        mdui.$("#chat").append(`<answer-message text="${data.message}" image="Undefined"></answer-message>`)
-                        step = 1
-                    } else {
-                        mdui.$("#chat answer-message:last-child").attr("text", mdui.$("#chat answer-message:last-child").attr("text") + data.message)
+                    if (data.type === "text") {
+                        if (step === 0) {
+                            mdui.$("#chat").append(`<answer-message text="${data.message}" image="Undefined"></answer-message>`)
+                            step = 1
+                        } else {
+                            mdui.$("#chat answer-message:last-child").attr("text", mdui.$("#chat answer-message:last-child").attr("text") + data.message)
+                        }
+
+                    } else if (data.type === "image") {
+                        if (step === 0) {
+                            mdui.$("#chat").append(`<answer-message text="" image="${data.message}"></answer-message>`)
+                            step = 1
+                        } else {
+                            mdui.$("#chat answer-message:last-child").attr("image", data.message)
+                        }
                     }
+
                 }
             })
             return reader.read().then(process);
