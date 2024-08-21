@@ -14,6 +14,11 @@ Bowery is an assistant based on the Gemini API and designed with Material You.
 ![Screenshot2](screenshots/2.png)
 ![Screenshot3](screenshots/3.png)
 
+## Shortcut
+<https://www.icloud.com/shortcuts/8c8f8b3bfddb4517a51721b53982e972>
+
+https://github.com/user-attachments/assets/2d960b60-54e7-402c-8dd7-41abce45f364
+
 ## How to use?
 
 1. Clone the repo
